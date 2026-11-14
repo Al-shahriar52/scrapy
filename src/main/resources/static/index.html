@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shajgoj Products</title>
+<style>
+  :root {
+    --bg: #f6f5f3; --card: #ffffff; --ink: #1f2328; --muted: #6b7280; --line: #e5e2dc;
+    --brand: #b3366b; --brand-dark: #8f2756; --danger: #c0392b; --ok: #1e8e5a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { background: var(--card); border-bottom: 1px solid var(--line); padding: 16px 24px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  main { max-width: 1250px; margin: 20px auto; padding: 0 16px 40px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .grow { flex: 1 1 220px; }
+  label.small { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+  input, select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; background: #fff; }
+  input:focus, select:focus { outline: 2px solid #e9c3d5; border-color: var(--brand); }
+  button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: #fff; padding: 8px 14px; border-radius: 7px; }
+  button:hover:not(:disabled) { background: #f3f0ec; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+  button.primary:hover:not(:disabled) { background: var(--brand-dark); }
+  button.danger { color: var(--danger); border-color: #efc9c4; }
+  button.danger:hover:not(:disabled) { background: #fbeceb; }
+  #scrapeStatus { font-size: 13px; color: var(--muted); }
+  #scrapeStatus.running { color: var(--brand); }
+  #scrapeStatus.fail { color: var(--danger); }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); white-space: nowrap; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--ink); }
+  td.img img { width: 56px; height: 56px; object-fit: contain; border-radius: 6px; background: #faf9f7; border: 1px solid var(--line); }
+  td.name { min-width: 260px; max-width: 420px; }
+  td.name a { color: var(--ink); text-decoration: none; font-weight: 500; }
+  td.name a:hover { color: var(--brand); text-decoration: underline; }
+  .old { color: var(--muted); text-decoration: line-through; font-size: 12px; display: block; }
+  .price { font-weight: 600; white-space: nowrap; }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #f4e3ec; color: var(--brand-dark); margin-right: 4px; white-space: nowrap; }
+  .pill.off { background: #e0f3e9; color: var(--ok); }
+  .sub { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+  .tag { font-size: 11px; padding: 1px 7px; border-radius: 99px; background: #eef0f3; color: #4b5563; white-space: nowrap; }
+  .rating { white-space: nowrap; }
+  .check { flex-direction: row !important; align-items: center; gap: 6px !important; font-size: 13px !important; color: var(--ink) !important; }
+  .check input { padding: 0; }
+  textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; resize: vertical; color: var(--ink); }
+  textarea:focus { outline: 2px solid #e9c3d5; border-color: var(--brand); }
+  dialog form { max-height: 90vh; overflow-y: auto; }
+  .pill.draft { background: #fff2cc; color: #8a6100; }
+  .thumbs { display: flex; gap: 4px; margin-top: 5px; }
+  .thumbs img { width: 38px; height: 38px; object-fit: cover; border-radius: 5px; border: 1px solid var(--line); background: #fff; }
+  #seoDialog { width: min(880px, 96vw); }
+  #seoDialog .imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  #seoDialog figure { margin: 0; text-align: center; font-size: 12px; color: var(--muted); }
+  #seoDialog figure img { width: 100%; max-width: 330px; aspect-ratio: 1 / 1; object-fit: contain; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  #seoDialog textarea, #seoDialog input { width: 100%; }
+  #seoError { color: var(--danger); font-size: 13px; min-height: 18px; }
+  #aiKeyWarn { margin-top: 10px; padding: 8px 12px; border-radius: 8px; background: #fff2cc; color: #6b4b00; font-size: 13px; }
+  .dialog-actions { flex-wrap: wrap; }
+  td.actions { white-space: nowrap; text-align: right; }
+  td.actions button { padding: 5px 11px; font-size: 13px; margin-left: 4px; }
+  .pager { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; flex-wrap: wrap; gap: 8px; color: var(--muted); font-size: 13px; }
+  .empty { padding: 40px 0; text-align: center; color: var(--muted); }
+  dialog { border: none; border-radius: 12px; padding: 0; width: min(520px, 94vw); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  dialog::backdrop { background: rgba(20,20,20,.4); }
+  dialog form { padding: 20px; display: grid; gap: 12px; }
+  dialog h2 { margin: 0 0 2px; font-size: 18px; }
+  dialog label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  dialog input { color: var(--ink); }
+  .two { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+  #formError { color: var(--danger); font-size: 13px; min-height: 18px; }
+  #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #222; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Shajgoj Products</h1>
+  <p>Scraped from shop.shajgoj.com · edit or delete products stored in your database</p>
+</header>
+
+<main>
+  <section class="card">
+    <div class="row">
+      <label class="small">From page
+        <input id="startPage" type="number" min="1" value="1" style="width:90px">
+      </label>
+      <label class="small">To page (empty = all)
+        <input id="endPage" type="number" min="1" placeholder="all" style="width:110px">
+      </label>
+      <button id="startBtn" class="primary" style="align-self:flex-end">Run scraper</button>
+      <button id="stopBtn" style="align-self:flex-end" disabled>Stop</button>
+      <span id="scrapeStatus" class="grow" style="align-self:flex-end">Idle</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="small check"><input id="optDetails" type="checkbox" checked>
+        Also open each product page (SKU, description, rating, brand, category, tags) - slower</label>
+      <label class="small check"><input id="optRefresh" type="checkbox">
+        Re-read details of products that already have them</label>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <strong style="align-self:flex-end">AI content (Gemini)</strong>
+      <label class="small">Products this run
+        <input id="aiLimit" type="number" min="1" max="2000" value="10" style="width:100px">
+      </label>
+      <button id="aiStart" class="primary" style="align-self:flex-end">Generate SEO content</button>
+      <button id="aiStop" style="align-self:flex-end" disabled>Stop</button>
+      <span id="aiStatus" class="grow" style="align-self:flex-end;font-size:13px;color:var(--muted)">...</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="small check"><input id="aiImages" type="checkbox" checked>
+        Also draw the 2 pictures (product photo + Bangla benefits)</label>
+      <label class="small check"><input id="aiRegen" type="checkbox">
+        Redo products that already have a draft (approved ones are never changed)</label>
+    </div>
+    <div id="aiKeyWarn" hidden>Gemini API key is not set. Create a free key at aistudio.google.com/apikey, set it as the
+      <code>GEMINI_API_KEY</code> environment variable and restart the app.</div>
+  </section>
+
+  <section class="card">
+    <div class="row" style="margin-bottom:10px">
+      <input id="search" class="grow" type="search" placeholder="Search by name, SKU, brand or category...">
+      <select id="pageSize">
+        <option value="10">10 / page</option>
+        <option value="20" selected>20 / page</option>
+        <option value="50">50 / page</option>
+        <option value="100">100 / page</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th class="sortable" data-sort="name">Name / SKU / Tags</th>
+            <th>Brand</th>
+            <th>Category</th>
+            <th class="sortable" data-sort="rating">Rating</th>
+            <th class="sortable" data-sort="salePrice">Price</th>
+            <th class="sortable" data-sort="discountPercent">Discount</th>
+            <th>Size</th>
+            <th>Badge</th>
+            <th class="sortable" data-sort="updatedAt">Updated</th>
+            <th>AI / SEO</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div id="empty" class="empty" hidden>No products yet. Run the scraper above to fetch some.</div>
+
+    <div class="pager">
+      <span id="total"></span>
+      <span>
+        <button id="prev">&larr; Prev</button>
+        <span id="pageInfo" style="margin:0 8px"></span>
+        <button id="next">Next &rarr;</button>
+      </span>
+    </div>
+  </section>
+</main>
+
+<dialog id="editDialog">
+  <form id="editForm" method="dialog">
+    <h2>Edit product</h2>
+    <label>Name <input id="fName" required maxlength="1000"></label>
+    <div class="two">
+      <label>Regular price (৳) <input id="fRegular" type="number" step="0.01" min="0"></label>
+      <label>Sale price (৳) <input id="fSale" type="number" step="0.01" min="0"></label>
+      <label>Discount % <input id="fDiscount" type="number" min="0" max="100"></label>
+    </div>
+    <div class="two" style="grid-template-columns:1fr 1fr">
+      <label>Size <input id="fSize" maxlength="100"></label>
+      <label>Badge <input id="fBadge" maxlength="100"></label>
+    </div>
+    <label>Image URL <input id="fImage" maxlength="2000"></label>
+    <div class="two" style="grid-template-columns:1fr 1fr 1fr">
+      <label>SKU <input id="fSku" maxlength="100"></label>
+      <label>Rating (0-5) <input id="fRating" type="number" step="0.1" min="0" max="5"></label>
+      <label>Reviews <input id="fReviews" type="number" min="0"></label>
+    </div>
+    <div class="two" style="grid-template-columns:1fr 1fr 1fr">
+      <label>Brand <input id="fBrand" maxlength="300"></label>
+      <label>Category <input id="fCategory" maxlength="300"></label>
+      <label>Sub category <input id="fSubCategory" maxlength="300"></label>
+    </div>
+    <label>Tags (comma separated) <input id="fTags"></label>
+    <label>Description <textarea id="fDescription" rows="6" maxlength="20000"></textarea></label>
+    <div id="formError"></div>
+    <div class="dialog-actions">
+      <button type="button" id="cancelBtn">Cancel</button>
+      <button type="submit" class="primary">Save changes</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="seoDialog">
+  <form id="seoForm" method="dialog">
+    <h2>SEO &amp; pictures</h2>
+    <div id="seoSource" class="sub"></div>
+    <div class="imgs">
+      <figure><img id="imgProduct" alt=""><figcaption id="capProduct">Product picture</figcaption></figure>
+      <figure><img id="imgBenefit" alt=""><figcaption id="capBenefit">Bangla benefits picture</figcaption></figure>
+    </div>
+    <label>SEO name <input id="sName" maxlength="300"></label>
+    <label>Slug <input id="sSlug" maxlength="300"></label>
+    <label>Meta description <textarea id="sMeta" rows="2" maxlength="400"></textarea></label>
+    <label>Description <textarea id="sDesc" rows="7"></textarea></label>
+    <label>Bangla benefits (one line each, max 8) <textarea id="sBenefits" rows="5" lang="bn"></textarea></label>
+    <label>Picture alt text <input id="sAlt" maxlength="300"></label>
+    <div id="seoError"></div>
+    <div class="dialog-actions">
+      <button type="button" id="seoClose">Close</button>
+      <button type="button" id="seoGen">Write again with AI</button>
+      <button type="button" id="seoRedraw">Save &amp; redraw pictures</button>
+      <button type="button" id="seoDraft">Save draft</button>
+      <button type="button" id="seoApprove" class="primary">Save &amp; approve</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast"></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const state = { page: 0, size: 20, q: '', sortBy: 'id', dir: 'desc', totalPages: 0 };
+  let editingId = null;
+  let pollTimer = null;
+
+  // ---------- helpers ----------
+  // Backend address. When this page is served by the Spring app itself it is empty (same origin).
+  // When the file is opened from IntelliJ's preview (port 63342) or from disk, it talks to the backend on 8081.
+  // You can also force it with  ?api=http://localhost:8081
+  const API_BASE = (new URLSearchParams(location.search).get('api')
+    || ((location.port === '63342' || location.protocol === 'file:') ? 'http://localhost:8081' : '')).replace(/\/$/, '');
+
+  async function api(path, opts) {
+    const res = await fetch(API_BASE + path, opts);
+    if (!res.ok) {
+      let msg = res.statusText;
+      try { const j = await res.json(); msg = j.message || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+    return res.status === 204 ? null : res.json();
+  }
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+  const taka = v => v == null ? '-' : '৳ ' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function el(tag, props, ...children) {
+    const e = document.createElement(tag);
+    Object.assign(e, props || {});
+    children.forEach(c => e.append(c));
+    return e;
+  }
+  function safeUrl(u) {
+    try { const x = new URL(u); return (x.protocol === 'http:' || x.protocol === 'https:') ? x.href : null; } catch (_) { return null; }
+  }
+
+  // ---------- list ----------
+  async function loadProducts() {
+    const params = new URLSearchParams({ q: state.q, page: state.page, size: state.size, sortBy: state.sortBy, dir: state.dir });
+    const data = await api('/api/products?' + params);
+    state.totalPages = data.totalPages;
+    const tbody = $('rows');
+    tbody.replaceChildren();
+
+    data.content.forEach(p => {
+      const tr = el('tr');
+
+      const imgTd = el('td', { className: 'img' });
+      const imgUrl = safeUrl(p.imageUrl);
+      if (imgUrl) {
+        const img = el('img', { src: imgUrl, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer' });
+        img.onerror = () => img.style.visibility = 'hidden';
+        imgTd.append(img);
+      }
+      tr.append(imgTd);
+
+      const nameTd = el('td', { className: 'name' });
+      const link = safeUrl(p.productUrl);
+      nameTd.append(link ? el('a', { href: link, target: '_blank', rel: 'noopener noreferrer', textContent: p.name }) : document.createTextNode(p.name));
+      if (p.sku) nameTd.append(el('span', { className: 'sub', textContent: 'SKU: ' + p.sku }));
+      if (p.tags && p.tags.length) {
+        const box = el('div', { className: 'tags' });
+        p.tags.slice(0, 5).forEach(t => box.append(el('span', { className: 'tag', textContent: t })));
+        if (p.tags.length > 5) box.append(el('span', { className: 'tag', textContent: '+' + (p.tags.length - 5), title: p.tags.slice(5).join(', ') }));
+        nameTd.append(box);
+      }
+      tr.append(nameTd);
+
+      tr.append(el('td', { textContent: p.brand || '' }));
+
+      const catTd = el('td');
+      if (p.category) catTd.append(el('span', { textContent: p.category }));
+      if (p.subCategory) catTd.append(el('span', { className: 'sub', textContent: p.subCategory, title: p.categoryPath || '' }));
+      tr.append(catTd);
+
+      tr.append(el('td', {
+        className: 'rating',
+        textContent: p.rating != null ? '★ ' + Number(p.rating).toFixed(1) + (p.numReviews != null ? ' (' + p.numReviews + ')' : '') : (p.numReviews != null ? '(' + p.numReviews + ')' : '')
+      }));
+
+      const priceTd = el('td');
+      if (p.regularPrice != null && p.salePrice != null && Number(p.regularPrice) > Number(p.salePrice)) {
+        priceTd.append(el('span', { className: 'old', textContent: taka(p.regularPrice) }));
+      }
+      priceTd.append(el('span', { className: 'price', textContent: taka(p.salePrice ?? p.regularPrice) }));
+      tr.append(priceTd);
+
+      const discTd = el('td');
+      if (p.discountPercent) discTd.append(el('span', { className: 'pill off', textContent: p.discountPercent + '% off' }));
+      tr.append(discTd);
+
+      tr.append(el('td', { textContent: p.size || '' }));
+
+      const badgeTd = el('td');
+      if (p.badge) p.badge.split(',').forEach(b => badgeTd.append(el('span', { className: 'pill', textContent: b.trim() })));
+      tr.append(badgeTd);
+
+      tr.append(el('td', { textContent: p.updatedAt ? p.updatedAt.replace('T', ' ').slice(0, 16) : '', style: 'white-space:nowrap;color:#6b7280;font-size:13px' }));
+
+      const seoTd = el('td');
+      if (p.seoStatus) {
+        seoTd.append(el('span', { className: 'pill ' + (p.seoStatus === 'APPROVED' ? 'off' : 'draft'), textContent: p.seoStatus === 'APPROVED' ? 'Approved' : 'Draft' }));
+        if (p.seoName) seoTd.append(el('span', { className: 'sub', textContent: p.seoName, title: p.seoName, style: 'max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' }));
+        const thumbs = el('div', { className: 'thumbs' });
+        [p.productImageUrl, p.benefitImageUrl].forEach(u => { if (u) thumbs.append(el('img', { src: API_BASE + u, alt: '', loading: 'lazy' })); });
+        if (thumbs.children.length) seoTd.append(thumbs);
+      } else {
+        seoTd.append(el('span', { className: 'sub', textContent: '-' }));
+      }
+      tr.append(seoTd);
+
+      const actions = el('td', { className: 'actions' });
+      const editBtn = el('button', { textContent: 'Edit' });
+      editBtn.onclick = () => openEdit(p);
+      const delBtn = el('button', { className: 'danger', textContent: 'Delete' });
+      delBtn.onclick = () => removeProduct(p);
+      const seoBtn = el('button', { textContent: 'SEO' });
+      seoBtn.onclick = () => openSeo(p);
+      actions.append(seoBtn, editBtn, delBtn);
+      tr.append(actions);
+
+      tbody.append(tr);
+    });
+
+    $('empty').hidden = data.totalElements !== 0;
+    $('total').textContent = data.totalElements.toLocaleString() + ' product' + (data.totalElements === 1 ? '' : 's');
+    $('pageInfo').textContent = data.totalPages === 0 ? '' : 'Page ' + (data.page + 1) + ' of ' + data.totalPages;
+    $('prev').disabled = data.page <= 0;
+    $('next').disabled = data.page + 1 >= data.totalPages;
+  }
+
+  // ---------- edit ----------
+  function openEdit(p) {
+    editingId = p.id;
+    $('fName').value = p.name || '';
+    $('fRegular').value = p.regularPrice ?? '';
+    $('fSale').value = p.salePrice ?? '';
+    $('fDiscount').value = p.discountPercent ?? '';
+    $('fSize').value = p.size || '';
+    $('fBadge').value = p.badge || '';
+    $('fImage').value = p.imageUrl || '';
+    $('fSku').value = p.sku || '';
+    $('fRating').value = p.rating ?? '';
+    $('fReviews').value = p.numReviews ?? '';
+    $('fBrand').value = p.brand || '';
+    $('fCategory').value = p.category || '';
+    $('fSubCategory').value = p.subCategory || '';
+    $('fTags').value = (p.tags || []).join(', ');
+    $('fDescription').value = p.description || '';
+    $('formError').textContent = '';
+    $('editDialog').showModal();
+  }
+  $('cancelBtn').onclick = () => $('editDialog').close();
+  $('editForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const num = id => $(id).value === '' ? null : Number($(id).value);
+    const body = {
+      name: $('fName').value,
+      regularPrice: num('fRegular'),
+      salePrice: num('fSale'),
+      discountPercent: num('fDiscount'),
+      size: $('fSize').value,
+      badge: $('fBadge').value,
+      imageUrl: $('fImage').value,
+      sku: $('fSku').value,
+      rating: num('fRating'),
+      numReviews: num('fReviews'),
+      brand: $('fBrand').value,
+      category: $('fCategory').value,
+      subCategory: $('fSubCategory').value,
+      tags: $('fTags').value.split(',').map(t => t.trim()).filter(Boolean),
+      description: $('fDescription').value
+    };
+    try {
+      await api('/api/products/' + editingId, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      $('editDialog').close();
+      toast('Product updated');
+      loadProducts();
+    } catch (e) {
+      $('formError').textContent = e.message;
+    }
+  });
+
+  // ---------- delete ----------
+  async function removeProduct(p) {
+    if (!confirm('Delete "' + p.name + '"?\nThis cannot be undone.')) return;
+    try {
+      await api('/api/products/' + p.id, { method: 'DELETE' });
+      toast('Product deleted');
+      if ($('rows').children.length === 1 && state.page > 0) state.page--;
+      loadProducts();
+    } catch (e) { toast(e.message); }
+  }
+
+  // ---------- list controls ----------
+  let searchTimer;
+  $('search').addEventListener('input', e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { state.q = e.target.value; state.page = 0; loadProducts(); }, 300);
+  });
+  $('pageSize').onchange = e => { state.size = Number(e.target.value); state.page = 0; loadProducts(); };
+  $('prev').onclick = () => { if (state.page > 0) { state.page--; loadProducts(); } };
+  $('next').onclick = () => { if (state.page + 1 < state.totalPages) { state.page++; loadProducts(); } };
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.onclick = () => {
+      const field = th.dataset.sort;
+      state.dir = (state.sortBy === field && state.dir === 'asc') ? 'desc' : 'asc';
+      state.sortBy = field;
+      state.page = 0;
+      loadProducts();
+    };
+  });
+
+  // ---------- scraper panel ----------
+  function renderStatus(s) {
+    const box = $('scrapeStatus');
+    box.className = s.state === 'RUNNING' ? 'running' : (s.state === 'FAILED' ? 'fail' : '');
+    if (s.state === 'IDLE') box.textContent = 'Idle';
+    else {
+      const details = s.fetchDetails ? ' · details ' + s.detailsDone + (s.detailsFailed ? ' (' + s.detailsFailed + ' failed)' : '') : '';
+      box.textContent = (s.state === 'RUNNING' ? 'Running - page ' + s.currentPage : s.state + ' - ' + s.pagesDone + ' pages')
+        + ' · ' + s.inserted + ' new, ' + s.updated + ' updated' + details + ' · ' + s.message;
+    }
+    $('startBtn').disabled = s.state === 'RUNNING';
+    $('stopBtn').disabled = s.state !== 'RUNNING';
+  }
+  async function pollStatus() {
+    try {
+      const s = await api('/api/scrape/status');
+      renderStatus(s);
+      loadProducts();
+      if (s.state === 'RUNNING') {
+        pollTimer = setTimeout(pollStatus, 2500);
+      } else {
+        pollTimer = null;
+      }
+    } catch (e) { pollTimer = setTimeout(pollStatus, 5000); }
+  }
+  $('startBtn').onclick = async () => {
+    const start = Number($('startPage').value) || 1;
+    const end = $('endPage').value;
+    const qs = new URLSearchParams({ startPage: start });
+    if (end) qs.set('endPage', end);
+    qs.set('details', $('optDetails').checked);
+    qs.set('refresh', $('optRefresh').checked);
+    try {
+      const s = await api('/api/scrape?' + qs, { method: 'POST' });
+      renderStatus(s);
+      if (!pollTimer) pollTimer = setTimeout(pollStatus, 1500);
+    } catch (e) { toast(e.message); }
+  };
+  $('stopBtn').onclick = async () => {
+    try { renderStatus(await api('/api/scrape/stop', { method: 'POST' })); toast('Stopping after the current page...'); } catch (e) { toast(e.message); }
+  };
+
+  // ---------- AI batch panel ----------
+  let aiTimer = null;
+  function renderAi(s) {
+    $('aiKeyWarn').hidden = s.configured;
+    const box = $('aiStatus');
+    box.style.color = s.state === 'FAILED' ? 'var(--danger)' : (s.state === 'RUNNING' ? 'var(--brand)' : 'var(--muted)');
+    if (s.state === 'IDLE') {
+      box.textContent = 'Idle · model ' + s.model;
+    } else {
+      const pics = s.withImages ? ' · pictures ' + s.imagesDone + (s.imagesFailed ? ' (' + s.imagesFailed + ' failed)' : '') : '';
+      box.textContent = (s.state === 'RUNNING' ? 'Running ' : s.state + ' ') + (s.done + s.failed) + '/' + s.total
+        + (s.failed ? ' (' + s.failed + ' skipped)' : '') + pics
+        + (s.state === 'RUNNING' && s.current ? ' · ' + s.current : '') + ' · ' + s.message;
+    }
+    $('aiStart').disabled = s.state === 'RUNNING';
+    $('aiStop').disabled = s.state !== 'RUNNING';
+  }
+  async function pollAi() {
+    try {
+      const s = await api('/api/ai/status');
+      renderAi(s);
+      if (s.state === 'RUNNING') { loadProducts(); aiTimer = setTimeout(pollAi, 3000); } else { loadProducts(); aiTimer = null; }
+    } catch (e) { aiTimer = setTimeout(pollAi, 6000); }
+  }
+  $('aiStart').onclick = async () => {
+    const qs = new URLSearchParams({
+      limit: Number($('aiLimit').value) || 10,
+      images: $('aiImages').checked,
+      regenerate: $('aiRegen').checked
+    });
+    try {
+      renderAi(await api('/api/ai/generate?' + qs, { method: 'POST' }));
+      if (!aiTimer) aiTimer = setTimeout(pollAi, 2000);
+    } catch (e) { toast(e.message); }
+  };
+  $('aiStop').onclick = async () => {
+    try { renderAi(await api('/api/ai/stop', { method: 'POST' })); toast('Stopping after the current product...'); } catch (e) { toast(e.message); }
+  };
+
+  // ---------- SEO review dialog ----------
+  let seoId = null;
+  function setPic(imgId, capId, url, label) {
+    const img = $(imgId);
+    if (url) { img.src = API_BASE + url; img.hidden = false; $(capId).textContent = label; }
+    else { img.removeAttribute('src'); img.hidden = true; $(capId).textContent = label + ' - not drawn yet'; }
+  }
+  function fillSeo(p) {
+    seoId = p.id;
+    $('seoSource').textContent = p.name + ' · ' + (p.seoStatus === 'APPROVED' ? 'approved' : (p.seoStatus ? 'draft' : 'not generated yet'));
+    setPic('imgProduct', 'capProduct', p.productImageUrl, 'Product picture');
+    setPic('imgBenefit', 'capBenefit', p.benefitImageUrl, 'Bangla benefits picture');
+    $('sName').value = p.seoName || '';
+    $('sSlug').value = p.seoSlug || '';
+    $('sMeta').value = p.metaDescription || '';
+    $('sDesc').value = p.seoDescription || '';
+    $('sBenefits').value = (p.benefitsBn || []).join('\n');
+    $('sAlt').value = p.imageAlt || '';
+    $('seoError').textContent = '';
+  }
+  function openSeo(p) { fillSeo(p); $('seoDialog').showModal(); }
+  $('seoForm').addEventListener('submit', ev => ev.preventDefault());
+  $('seoClose').onclick = () => $('seoDialog').close();
+
+  async function withBusy(btn, fn) {
+    const all = ['seoGen', 'seoRedraw', 'seoDraft', 'seoApprove'].map($);
+    const label = btn.textContent;
+    all.forEach(b => b.disabled = true);
+    btn.textContent = 'Working...';
+    $('seoError').textContent = '';
+    try { await fn(); } catch (e) { $('seoError').textContent = e.message; }
+    finally { btn.textContent = label; all.forEach(b => b.disabled = false); }
+  }
+  async function saveSeo(status) {
+    if (!$('sName').value.trim()) throw new Error('SEO name is required');
+    const body = {
+      seoName: $('sName').value,
+      seoSlug: $('sSlug').value,
+      metaDescription: $('sMeta').value,
+      seoDescription: $('sDesc').value,
+      benefitsBn: $('sBenefits').value.split('\n').map(s => s.trim()).filter(Boolean),
+      imageAlt: $('sAlt').value,
+      status: status
+    };
+    const p = await api('/api/ai/products/' + seoId + '/seo', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    fillSeo(p);
+    loadProducts();
+    return p;
+  }
+  $('seoDraft').onclick = e => withBusy(e.target, async () => { await saveSeo('DRAFT'); toast('Saved as draft'); });
+  $('seoApprove').onclick = e => withBusy(e.target, async () => { await saveSeo('APPROVED'); toast('Approved'); });
+  $('seoRedraw').onclick = e => withBusy(e.target, async () => {
+    await saveSeo(null);
+    fillSeo(await api('/api/ai/products/' + seoId + '/images', { method: 'POST' }));
+    loadProducts();
+    toast('Pictures redrawn');
+  });
+  $('seoGen').onclick = e => withBusy(e.target, async () => {
+    if ($('sName').value.trim() && !confirm('Replace the current text with a new AI version?')) return;
+    fillSeo(await api('/api/ai/products/' + seoId + '/generate?images=true', { method: 'POST' }));
+    loadProducts();
+    toast('New content written');
+  });
+
+  // ---------- init ----------
+  loadProducts();
+  pollStatus();
+  pollAi();
+</script>
+</body>
+</html>
