@@ -85,6 +85,7 @@ public class AiJobService {
     private void run(List<Long> ids, boolean withImages) {
         String state = "DONE";
         String message = "Finished";
+        int failuresInARow = 0;
         try {
             for (int i = 0; i < ids.size(); i++) {
                 if (stopRequested) {
@@ -98,6 +99,7 @@ public class AiJobService {
                 try {
                     seo.generateText(id);
                     status.textDone();
+                    failuresInARow = 0;
                 } catch (GeminiException e) {
                     if (e.isFatal()) {
                         state = "FAILED";
@@ -106,6 +108,12 @@ public class AiJobService {
                     }
                     log.warn("AI text failed for product {}: {}", id, e.getMessage());
                     status.textFailed();
+                    if (++failuresInARow >= 5) {
+                        state = "FAILED";
+                        message = "Stopped after 5 failures in a row - " + e.getMessage()
+                                + " Products already done are saved; run it again in a little while.";
+                        break;
+                    }
                     status.setMessage("Skipped \"" + shorten(p.getName()) + "\": " + e.getMessage());
                     Thread.sleep(gemini.delayMs());
                     continue;

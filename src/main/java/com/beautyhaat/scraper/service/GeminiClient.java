@@ -70,9 +70,21 @@ public class GeminiClient {
 
     public SeoContent generateSeo(ProductFacts facts) throws GeminiException, InterruptedException {
         String body = buildRequest(facts).toString();
-        String url = props.getBaseUrl() + "/models/" + props.getModel() + ":generateContent";
-        String response = post(url, body);
-        return parseSeo(response);
+        try {
+            return parseSeo(post(urlFor(props.getModel()), body, 4));
+        } catch (GeminiException e) {
+            String fallback = props.getFallbackModel();
+            if (e.kind() == GeminiException.Kind.BUSY && fallback != null && !fallback.isBlank()
+                    && !fallback.equals(props.getModel())) {
+                log.info("{} is overloaded, trying {}", props.getModel(), fallback);
+                return parseSeo(post(urlFor(fallback), body, 2));
+            }
+            throw e;
+        }
+    }
+
+    private String urlFor(String model) {
+        return props.getBaseUrl() + "/models/" + model + ":generateContent";
     }
 
     ObjectNode buildRequest(ProductFacts f) {
@@ -203,7 +215,7 @@ public class GeminiClient {
     public List<String> listModels() throws GeminiException, InterruptedException {
         String response = send(HttpRequest.newBuilder(URI.create(props.getBaseUrl() + "/models?pageSize=200"))
                 .header("x-goog-api-key", props.getApiKey())
-                .timeout(Duration.ofMillis(props.getTimeoutMs())).GET().build());
+                .timeout(Duration.ofMillis(props.getTimeoutMs())).GET().build(), 2);
         try {
             List<String> names = new ArrayList<>();
             for (JsonNode m : JSON.readTree(response).path("models")) {
@@ -221,17 +233,20 @@ public class GeminiClient {
 
     // ---------------------------------------------------------------- http
 
-    private String post(String url, String body) throws GeminiException, InterruptedException {
+    private String post(String url, String body, int maxServerRetries) throws GeminiException, InterruptedException {
         HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                 .header("Content-Type", "application/json")
                 .header("x-goog-api-key", props.getApiKey())
                 .timeout(Duration.ofMillis(props.getTimeoutMs()))
                 .POST(HttpRequest.BodyPublishers.ofString(body)).build();
-        return send(req);
+        return send(req, maxServerRetries);
     }
 
-    /** Sends a request. A per-minute rate limit is waited out once; server hiccups are retried twice. */
-    private String send(HttpRequest req) throws GeminiException, InterruptedException {
+    /**
+     * Sends a request. A per-minute rate limit is waited out once. "Overloaded" answers (500/503/504) and network
+     * errors are retried up to maxServerRetries times, waiting longer each time (5, 10, 20, 40 s by default).
+     */
+    private String send(HttpRequest req, int maxServerRetries) throws GeminiException, InterruptedException {
         if (!isConfigured()) {
             throw new GeminiException(GeminiException.Kind.AUTH,
                     "Gemini API key is not set. Set the GEMINI_API_KEY environment variable and restart the app.");
@@ -243,10 +258,10 @@ public class GeminiClient {
             try {
                 res = http.send(req, HttpResponse.BodyHandlers.ofString());
             } catch (IOException e) {
-                if (++serverErrors > 2) {
+                if (++serverErrors > maxServerRetries) {
                     throw new GeminiException(GeminiException.Kind.OTHER, "Could not reach Gemini: " + e.getMessage());
                 }
-                Thread.sleep(4000L * serverErrors);
+                Thread.sleep(backoffMs(serverErrors));
                 continue;
             }
             int code = res.statusCode();
@@ -279,12 +294,21 @@ public class GeminiClient {
                 throw new GeminiException(GeminiException.Kind.AUTH,
                         "Gemini model not found (" + props.getModel() + "). Open /api/ai/models to see the names you can use, then set gemini.model. " + message);
             }
-            if ((code == 500 || code == 503) && ++serverErrors <= 2) {
-                Thread.sleep(5000L * serverErrors);
-                continue;
+            if (code == 500 || code == 503 || code == 504) {
+                if (++serverErrors <= maxServerRetries) {
+                    log.info("Gemini answered HTTP {}, retry {} of {}", code, serverErrors, maxServerRetries);
+                    Thread.sleep(backoffMs(serverErrors));
+                    continue;
+                }
+                throw new GeminiException(GeminiException.Kind.BUSY, "Gemini is overloaded right now (HTTP " + code + "). " + message);
             }
             throw new GeminiException(GeminiException.Kind.OTHER, "Gemini error HTTP " + code + ". " + message);
         }
+    }
+
+    /** 1st retry waits the base time, then it doubles each time, capped at 60 s. */
+    private long backoffMs(int attempt) {
+        return Math.min(60_000L, props.getServerRetryBaseMs() * (1L << (attempt - 1)));
     }
 
     private static String errorMessage(String body) {

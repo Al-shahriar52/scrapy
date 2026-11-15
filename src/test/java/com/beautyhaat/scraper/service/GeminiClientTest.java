@@ -136,6 +136,21 @@ class GeminiClientTest {
     }
 
     @Test
+    void overloadedModelIsRetriedThenReportedAsBusyAndNotFatal() {
+        status = 503;
+        reply = "{\"error\":{\"code\":503,\"message\":\"This model is currently experiencing high demand.\"}}";
+        GeminiProperties p = new GeminiProperties();
+        p.setApiKey("k");
+        p.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort() + "/v1beta");
+        p.setFallbackModel("");
+        p.setServerRetryBaseMs(5); // keep the test fast
+        GeminiException e = assertThrows(GeminiException.class, () -> new GeminiClient(p).generateSeo(FACTS));
+        assertEquals(GeminiException.Kind.BUSY, e.kind());
+        assertFalse(e.isFatal());
+        assertTrue(e.getMessage().contains("overloaded"));
+    }
+
+    @Test
     void missingKeyIsReportedClearly() {
         GeminiException e = assertThrows(GeminiException.class, () -> client("").generateSeo(FACTS));
         assertEquals(GeminiException.Kind.AUTH, e.kind());

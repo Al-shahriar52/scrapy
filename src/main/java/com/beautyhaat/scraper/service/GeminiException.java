@@ -10,6 +10,8 @@ public class GeminiException extends Exception {
         DAILY_QUOTA,
         /** Too many requests per minute even after waiting. */
         RATE_LIMIT,
+        /** Google's servers are overloaded (HTTP 500/503/504) even after several retries. Temporary. */
+        BUSY,
         /** Only this product failed (blocked answer, bad JSON, server hiccup). */
         OTHER
     }
